@@ -11,21 +11,19 @@ except ImportError:
 
 from homeassistant.components.climate.const import (
     ATTR_HVAC_MODE,
-    HVAC_MODE_AUTO,
-    HVAC_MODE_COOL,
-    HVAC_MODE_DRY,
-    HVAC_MODE_FAN_ONLY,
-    HVAC_MODE_HEAT,
-    HVAC_MODE_OFF,
-    SUPPORT_FAN_MODE,
-    SUPPORT_TARGET_TEMPERATURE,
+    FAN_AUTO,
+    FAN_HIGH,
+    FAN_LOW,
+    FAN_MEDIUM,
+    ClimateEntityFeature,
+    HVACMode,
 )
 from homeassistant.const import (
     ATTR_TEMPERATURE,
     CONF_PASSWORD,
     CONF_USERNAME,
     STATE_UNKNOWN,
-    TEMP_CELSIUS,
+    UnitOfTemperature,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -34,18 +32,13 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {vol.Required(CONF_USERNAME): cv.string, vol.Required(CONF_PASSWORD): cv.string}
 )
 
-FAN_AUTO = "auto"
-FAN_LOW = "low"
-FAN_MEDIUM = "mid"
-FAN_HIGH = "high"
-
 MAP_MODE_ID = {
-    0: HVAC_MODE_OFF,
-    1: HVAC_MODE_COOL,
-    2: HVAC_MODE_HEAT,
-    3: HVAC_MODE_DRY,
-    4: HVAC_MODE_FAN_ONLY,
-    254: HVAC_MODE_AUTO,
+    0: HVACMode.OFF,
+    1: HVACMode.COOL,
+    2: HVACMode.HEAT,
+    3: HVACMode.DRY,
+    4: HVACMode.FAN_ONLY,
+    254: HVACMode.AUTO,
 }
 
 MAP_FAN_MODE_ID = {1: FAN_LOW, 2: FAN_MEDIUM, 3: FAN_HIGH, 254: FAN_AUTO}
@@ -99,15 +92,20 @@ class BghHVAC(ClimateEntity):
         self._parse_data()
 
         self._hvac_modes = [
-            HVAC_MODE_AUTO,
-            HVAC_MODE_COOL,
-            HVAC_MODE_HEAT,
-            HVAC_MODE_DRY,
-            HVAC_MODE_FAN_ONLY,
-            HVAC_MODE_OFF,
+            HVACMode.AUTO,
+            HVACMode.COOL,
+            HVACMode.HEAT,
+            HVACMode.DRY,
+            HVACMode.FAN_ONLY,
+            HVACMode.OFF,
         ]
         self._fan_modes = [FAN_AUTO, FAN_LOW, FAN_MEDIUM, FAN_HIGH]
-        self._support = SUPPORT_TARGET_TEMPERATURE | SUPPORT_FAN_MODE
+        self._support = (
+            ClimateEntityFeature.TARGET_TEMPERATURE
+            | ClimateEntityFeature.FAN_MODE
+            | ClimateEntityFeature.TURN_ON
+            | ClimateEntityFeature.TURN_OFF
+        )
 
     def _parse_data(self):
         """Parse the data in self._device"""
@@ -136,7 +134,7 @@ class BghHVAC(ClimateEntity):
     @property
     def temperature_unit(self):
         """BGH Smart API uses celsius on the backend."""
-        return TEMP_CELSIUS
+        return UnitOfTemperature.CELSIUS
 
     @property
     def current_temperature(self):
