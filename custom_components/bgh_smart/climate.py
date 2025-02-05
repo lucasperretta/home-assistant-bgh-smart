@@ -1,4 +1,6 @@
+import asyncio
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
 import pybgh
 from homeassistant.components.climate import ClimateEntity
@@ -35,17 +37,31 @@ MAP_FAN_MODE_ID = {1: FAN_LOW, 2: FAN_MEDIUM, 3: FAN_HIGH, 254: FAN_AUTO}
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up the BGH Smart climate device from config entry."""
-    client = pybgh.BghClient(entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD])
+    loop = asyncio.get_running_loop()
+
+    def create_client():
+        return pybgh.BghClient(entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD])
+
+    # Run the blocking client initialization in a separate thread
+    with ThreadPoolExecutor() as pool:
+        client = await loop.run_in_executor(pool, create_client)
 
     if not client.token:
         _LOGGER.error("Could not connect to BGH Smart cloud")
         return False
 
-    devices = []
-    for home in client.get_homes():
-        home_devices = client.get_devices(home["HomeID"])
-        for _device_id, device in home_devices.items():
-            devices.append(device)
+    def get_devices():
+        """Fetch devices from the BGH Smart API."""
+        devices = []
+        for home in client.get_homes():
+            home_devices = client.get_devices(home["HomeID"])
+            for _device_id, device in home_devices.items():
+                devices.append(device)
+        return devices
+
+    # Fetch devices in a separate thread
+    with ThreadPoolExecutor() as pool:
+        devices = await loop.run_in_executor(pool, get_devices)
 
     async_add_entities(BghHVAC(device, client) for device in devices)
 
