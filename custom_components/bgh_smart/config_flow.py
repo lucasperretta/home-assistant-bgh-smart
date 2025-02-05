@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import pybgh
@@ -25,9 +27,16 @@ class BGHSmartConfigFlow(config_entries.ConfigFlow, domain="bgh_smart"):
             await self.async_set_unique_id(user_input[CONF_USERNAME])
             self._abort_if_unique_id_configured()
 
-            client = pybgh.BghClient(
-                user_input[CONF_USERNAME], user_input[CONF_PASSWORD]
-            )
+            loop = asyncio.get_running_loop()
+
+            def create_client():
+                return pybgh.BghClient(
+                    user_input[CONF_USERNAME], user_input[CONF_PASSWORD]
+                )
+
+            # Run in a separate thread to avoid blocking the event loop
+            with ThreadPoolExecutor() as pool:
+                client = await loop.run_in_executor(pool, create_client)
 
             if client.token:
                 return self.async_create_entry(
