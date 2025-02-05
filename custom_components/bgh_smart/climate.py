@@ -1,38 +1,43 @@
-"""BGH Smart integration."""
-
 import logging
 
+import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 
-import homeassistant.helpers.config_validation as cv
-
 try:
-    from homeassistant.components.climate import ClimateEntity, PLATFORM_SCHEMA
+    from homeassistant.components.climate import PLATFORM_SCHEMA, ClimateEntity
 except ImportError:
-    from homeassistant.components.climate import ClimateDevice as ClimateEntity, PLATFORM_SCHEMA
+    from homeassistant.components.climate import PLATFORM_SCHEMA
+    from homeassistant.components.climate import ClimateDevice as ClimateEntity
 
 from homeassistant.components.climate.const import (
-    SUPPORT_TARGET_TEMPERATURE,
-    SUPPORT_FAN_MODE,
     ATTR_HVAC_MODE,
-    HVAC_MODE_HEAT, HVAC_MODE_COOL, HVAC_MODE_FAN_ONLY, HVAC_MODE_DRY,
-    HVAC_MODE_AUTO, HVAC_MODE_OFF)
+    HVAC_MODE_AUTO,
+    HVAC_MODE_COOL,
+    HVAC_MODE_DRY,
+    HVAC_MODE_FAN_ONLY,
+    HVAC_MODE_HEAT,
+    HVAC_MODE_OFF,
+    SUPPORT_FAN_MODE,
+    SUPPORT_TARGET_TEMPERATURE,
+)
 from homeassistant.const import (
-    ATTR_ENTITY_ID, ATTR_STATE, ATTR_TEMPERATURE,
-    CONF_USERNAME, CONF_PASSWORD,
-    STATE_ON, STATE_OFF, STATE_UNKNOWN, TEMP_CELSIUS, TEMP_FAHRENHEIT)
+    ATTR_TEMPERATURE,
+    CONF_PASSWORD,
+    CONF_USERNAME,
+    STATE_UNKNOWN,
+    TEMP_CELSIUS,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_USERNAME): cv.string,
-    vol.Required(CONF_PASSWORD): cv.string
-})
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+    {vol.Required(CONF_USERNAME): cv.string, vol.Required(CONF_PASSWORD): cv.string}
+)
 
-FAN_AUTO = 'auto'
-FAN_LOW = 'low'
-FAN_MEDIUM = 'mid'
-FAN_HIGH = 'high'
+FAN_AUTO = "auto"
+FAN_LOW = "low"
+FAN_MEDIUM = "mid"
+FAN_HIGH = "high"
 
 MAP_MODE_ID = {
     0: HVAC_MODE_OFF,
@@ -40,15 +45,11 @@ MAP_MODE_ID = {
     2: HVAC_MODE_HEAT,
     3: HVAC_MODE_DRY,
     4: HVAC_MODE_FAN_ONLY,
-    254: HVAC_MODE_AUTO
+    254: HVAC_MODE_AUTO,
 }
 
-MAP_FAN_MODE_ID = {
-    1: FAN_LOW,
-    2: FAN_MEDIUM,
-    3: FAN_HIGH,
-    254: FAN_AUTO
-}
+MAP_FAN_MODE_ID = {1: FAN_LOW, 2: FAN_MEDIUM, 3: FAN_HIGH, 254: FAN_AUTO}
+
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
     """Set up the BGH Smart platform."""
@@ -70,11 +71,12 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     # Add devices
     devices = []
     for home in client.get_homes():
-        home_devices = client.get_devices(home['HomeID'])
+        home_devices = client.get_devices(home["HomeID"])
         for _device_id, device in home_devices.items():
             devices.append(device)
 
     add_entities(BghHVAC(device, client) for device in devices)
+
 
 class BghHVAC(ClimateEntity):
     """Representation of a BGH Smart HVAC."""
@@ -84,9 +86,9 @@ class BghHVAC(ClimateEntity):
         self._device = device
         self._client = client
 
-        self._device_name = self._device['device_name']
-        self._device_id = self._device['device_id']
-        self._home_id = self._device['device_data']['HomeID']
+        self._device_name = self._device["device_name"]
+        self._device_id = self._device["device_id"]
+        self._home_id = self._device["device_data"]["HomeID"]
         self._min_temp = None
         self._max_temp = None
         self._current_temperature = None
@@ -96,10 +98,16 @@ class BghHVAC(ClimateEntity):
 
         self._parse_data()
 
-        self._hvac_modes = [HVAC_MODE_AUTO, HVAC_MODE_COOL, HVAC_MODE_HEAT,
-                            HVAC_MODE_DRY, HVAC_MODE_FAN_ONLY, HVAC_MODE_OFF]
+        self._hvac_modes = [
+            HVAC_MODE_AUTO,
+            HVAC_MODE_COOL,
+            HVAC_MODE_HEAT,
+            HVAC_MODE_DRY,
+            HVAC_MODE_FAN_ONLY,
+            HVAC_MODE_OFF,
+        ]
         self._fan_modes = [FAN_AUTO, FAN_LOW, FAN_MEDIUM, FAN_HIGH]
-        self._support = (SUPPORT_TARGET_TEMPERATURE | SUPPORT_FAN_MODE)
+        self._support = SUPPORT_TARGET_TEMPERATURE | SUPPORT_FAN_MODE
 
     def _parse_data(self):
         """Parse the data in self._device"""
@@ -107,11 +115,11 @@ class BghHVAC(ClimateEntity):
         self._max_temp = 30
 
         # Sometimes the API doesn't answer with the raw_data
-        if self._device['raw_data']:
-            self._current_temperature = self._device['data']['temperature']
-            self._target_temperature = self._device['data']['target_temperature']
-            self._mode = MAP_MODE_ID[self._device['data']['mode_id']]
-            self._fan_speed = MAP_FAN_MODE_ID[self._device['data']['fan_speed']]
+        if self._device["raw_data"]:
+            self._current_temperature = self._device["data"]["temperature"]
+            self._target_temperature = self._device["data"]["target_temperature"]
+            self._mode = MAP_MODE_ID[self._device["data"]["mode_id"]]
+            self._fan_speed = MAP_FAN_MODE_ID[self._device["data"]["fan_speed"]]
 
     def update(self):
         """Fetch new state data for this HVAC.
@@ -178,10 +186,8 @@ class BghHVAC(ClimateEntity):
     def set_mode(self):
         """Push the settings to the unit."""
         self._client.set_mode(
-            self._device_id,
-            self._mode,
-            self._target_temperature,
-            self._fan_speed)
+            self._device_id, self._mode, self._target_temperature, self._fan_speed
+        )
 
     def set_temperature(self, **kwargs):
         """Set new target temperature."""
