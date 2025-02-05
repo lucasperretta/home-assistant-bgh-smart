@@ -5,11 +5,7 @@ This integration will let you control your BGH Smart HVAC from Home Assistant.
 
 ## Installation
 
-### Manual
-
-Copy the `bgh_smart` folder to `<config_dir>/custom_components/bgh_smart/`.
-
-### HACS
+### HACS (Recommended)
 
 1. Go to the Home Assistant Community Store (HACS)
 2. Go to Integrations
@@ -20,13 +16,16 @@ Copy the `bgh_smart` folder to `<config_dir>/custom_components/bgh_smart/`.
 5. Search for "BGH Smart"
 6. Install the integration
 
+### Manual
+
+Copy the `bgh_smart` folder to `<config_dir>/custom_components/bgh_smart/`.
+
 ## Configuration
 
-Add the following entry in your `configuration.yaml`:
+1. Go to Settings -> Devices & Services
+2. Click the "+ ADD INTEGRATION" button in the bottom right
+3. Search for "BGH Smart"
+4. Enter your BGH Smart username and password
+5. Click Submit
 
-```yaml
-climate:
-  - platform: bgh_smart
-    username: your_username
-    password: your_secret_password
-```
+The integration will automatically discover all your BGH Smart devices.

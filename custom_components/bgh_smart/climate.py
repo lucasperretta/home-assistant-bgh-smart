@@ -1,14 +1,7 @@
 import logging
 
-import homeassistant.helpers.config_validation as cv
-import voluptuous as vol
-
-try:
-    from homeassistant.components.climate import PLATFORM_SCHEMA, ClimateEntity
-except ImportError:
-    from homeassistant.components.climate import PLATFORM_SCHEMA
-    from homeassistant.components.climate import ClimateDevice as ClimateEntity
-
+import pybgh
+from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
     ATTR_HVAC_MODE,
     FAN_AUTO,
@@ -28,10 +21,6 @@ from homeassistant.const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
-    {vol.Required(CONF_USERNAME): cv.string, vol.Required(CONF_PASSWORD): cv.string}
-)
-
 MAP_MODE_ID = {
     0: HVACMode.OFF,
     1: HVACMode.COOL,
@@ -44,31 +33,21 @@ MAP_MODE_ID = {
 MAP_FAN_MODE_ID = {1: FAN_LOW, 2: FAN_MEDIUM, 3: FAN_HIGH, 254: FAN_AUTO}
 
 
-def setup_platform(hass, config, add_entities, discovery_info=None):
-    """Set up the BGH Smart platform."""
-    import pybgh
+async def async_setup_entry(hass, entry, async_add_entities):
+    """Set up the BGH Smart climate device from config entry."""
+    client = pybgh.BghClient(entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD])
 
-    # Assign configuration variables.
-    # The configuration check takes care they are present.
-    username = config[CONF_USERNAME]
-    password = config[CONF_PASSWORD]
-
-    # Setup connection with devices/cloud
-    client = pybgh.BghClient(username, password)
-
-    # Verify that passed in configuration works
     if not client.token:
         _LOGGER.error("Could not connect to BGH Smart cloud")
-        return
+        return False
 
-    # Add devices
     devices = []
     for home in client.get_homes():
         home_devices = client.get_devices(home["HomeID"])
         for _device_id, device in home_devices.items():
             devices.append(device)
 
-    add_entities(BghHVAC(device, client) for device in devices)
+    async_add_entities(BghHVAC(device, client) for device in devices)
 
 
 class BghHVAC(ClimateEntity):

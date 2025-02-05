@@ -1,0 +1,15 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "data": {
+                    "username": "Usuario",
+                    "password": "Contraseña"
+                }
+            }
+        },
+        "error": {
+            "auth": "Usuario/Contraseña incorrectos."
+        }
+    }
+} 
