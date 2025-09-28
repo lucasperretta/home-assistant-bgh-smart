@@ -87,7 +87,6 @@ class BghHVAC(ClimateEntity):
         self._parse_data()
 
         self._hvac_modes = [
-            HVACMode.AUTO,
             HVACMode.COOL,
             HVACMode.HEAT,
             HVACMode.DRY,
