@@ -29,7 +29,7 @@ MAP_MODE_ID = {
     2: HVACMode.HEAT,
     3: HVACMode.DRY,
     4: HVACMode.FAN_ONLY,
-    254: HVACMode.AUTO,
+    254: HVACMode.DRY,  # remapped AUTO to DRY
 }
 
 MAP_FAN_MODE_ID = {1: FAN_LOW, 2: FAN_MEDIUM, 3: FAN_HIGH, 254: FAN_AUTO}
